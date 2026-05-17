@@ -54,7 +54,7 @@ Core0: 想要写地址 A
 
 ### 2.1 什么是 Store Buffer？
 
-**Store Buffer（存储缓冲区）** 是一个位于 CPU 流水线和 L1 数据缓存之间的**小型 FIFO 队列**，容量通常为 **4 ~ 12 个条目**。
+**Store Buffer（存储缓冲区）** 是一个位于 CPU 流水线和 L1 数据缓存之间的**小型 FIFO 队列**，容量通常为 **4 ~ 12 个条目**（早期处理器），现代处理器（2015年后，如 Intel Skylake 及以后）通常为 **56 ~ 72 个条目**。
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -580,8 +580,21 @@ struct GoodCounters_portable {
 };
 
 // 方法4: C++17 hardware_destructive_interference_size (标准但实现不一)
-// #include <new>
-// 有些编译器/平台支持, 但并非所有。保守起见直接写 64。
+#ifdef __cpp_lib_hardware_interference_size
+    #include <new>
+    struct GoodCounters_cpp17 {
+        alignas(std::hardware_destructive_interference_size) uint64_t counter_a;
+        alignas(std::hardware_destructive_interference_size) uint64_t counter_b;
+    };
+    // 注意: 该常量在 C++17 标准中定义, 但编译器支持不一致
+    // GCC/Clang 需要 -std=c++17, MSVC 在某些版本中可能不支持
+#else
+    // 回退方案: 直接使用 64 字节对齐
+    struct GoodCounters_cpp17 {
+        alignas(64) uint64_t counter_a;
+        alignas(64) uint64_t counter_b;
+    };
+#endif
 
 void bench_good() {
     GoodCounters_alignas counters = {0, 0};
