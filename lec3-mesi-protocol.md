@@ -998,6 +998,9 @@ g++ -std=c++17 -o mesi_sim mesi_sim.cpp && ./mesi_sim
 
 ### 问题 1：在 MESI 协议中，写缺失（write miss）后缓存行进入什么状态？
 
+<details>
+<summary>点击展开答案</summary>
+
 **答案**：进入 **M（Modified）** 状态。
 
 **详细解释**：当核心执行写操作但数据不在缓存中（write miss），它会在总线上发出 **BusRdX**（Bus Read Exclusive）事务。这个事务做了两件事：
@@ -1009,9 +1012,14 @@ g++ -std=c++17 -o mesi_sim mesi_sim.cpp && ./mesi_sim
 **追问**：为什么不是 E 而是 M？
 因为触发的是写操作，数据必然会被修改从而变脏，所以直接进入 M 而非 E。
 
+</details>
+
 ---
 
 ### 问题 2：为什么 E→M 的转换不需要任何总线事务？这是在什么前提条件下成立的？
+
+<details>
+<summary>点击展开答案</summary>
 
 **答案**：因为 E 状态的语义保证了 **"当前核心独占该缓存行，且没有其他核心持有副本"**。
 
@@ -1028,9 +1036,14 @@ E 状态从何而来？它来自 I 状态时的读缺失：核心发出 BusRd，
 
 **性能意义**：在 MSI 协议中，先读后写需要 2 次总线事务（BusRd + BusRdX/BusUpgr）。在 MESI 中，同样的操作只需 1 次（BusRd），E→M 的写不需要额外事务。对于频繁使用私有数据的程序（大多数程序都是如此），这是极大的性能优化。
 
+</details>
+
 ---
 
 ### 问题 3：当核心在 Shared 状态下执行写操作时，需要发出什么总线操作？为什么不用 BusRdX？
+
+<details>
+<summary>点击展开答案</summary>
 
 **答案**：发出 **BusUpgr**（Bus Upgrade），而不是 BusRdX。
 
@@ -1049,9 +1062,14 @@ E 状态从何而来？它来自 I 状态时的读缺失：核心发出 BusRd，
 
 BusUpgr 是 MESI 协议中另一个重要的优化（相比 MSI 的 BusRdX），它和 E→M 优化一起大幅减少了总线流量。
 
+</details>
+
 ---
 
 ### 问题 4：如果一个处于 M 状态的核心驱逐（evict）该缓存行，会发生什么？如果是 E 状态呢？
+
+<details>
+<summary>点击展开答案</summary>
 
 **答案**：
 
@@ -1075,9 +1093,14 @@ BusUpgr 是 MESI 协议中另一个重要的优化（相比 MSI 的 BusRdX），
 | E 状态驱逐 | 否 | 否 | 数据干净 |
 | S 状态驱逐 | 否 | 否 | 数据干净，其他核心仍有副本 |
 
+</details>
+
 ---
 
 ### 问题 5：MSI 和 MESI 的关键区别是什么？为什么说 E 状态是"最重要的优化"？
+
+<details>
+<summary>点击展开答案</summary>
 
 **答案**：
 
@@ -1106,6 +1129,8 @@ BusUpgr 是 MESI 协议中另一个重要的优化（相比 MSI 的 BusRdX），
 **面试总结模板**：
 
 > MESI 相比 MSI 的核心改进是增加了 Exclusive 状态。E 状态表示"独占但干净"——只有当前核心持有该行且数据与主存一致。这使得先读后写的私有数据访问模式从 MSI 的两次总线事务减少为一次，因为 E→M 的转换不需要通知其他核心。MESI 还引入了 BusUpgr 事务来优化 S→M 的转换。这两个优化使得 MESI 成为实际处理器（Intel、AMD、ARM）中最广泛使用的缓存一致性协议的基础。
+
+</details>
 
 ---
 
